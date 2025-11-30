@@ -16,10 +16,18 @@ DHT dht(DHTPIN, DHTTYPE);
 #define LED_VERDE 21
 #define LED_ALERTA_ROJA_TEMP 12 
 #define LED_ALERTA_AZUL_TEMP 14
+#define LED_ALERTA_ROJA_HUM 27 
+#define LED_ALERTA_AZUL_HUM 26
 
-// UMBRALES DE ALERTA DE TEMPERATURA
-#define UMBRAL_ALTO 30.0
-#define UMBRAL_BAJO 26.7
+// UMBRALES DE TEMPERATURA Y HUEMDAD PARA ALERTAS
+volatile float UMBRAL_ALTO = 30.0;
+volatile float UMBRAL_BAJO = 15.0;
+volatile float UMBRAL_ALTO_HUM = 90.0;
+volatile float UMBRAL_BAJO_HUM = 30.0;
+
+// TOPICOS DE COMANDO (Debe coincidir con Python)
+const char* TOPIC_UMBRAL_TEMP = "ic/umbral/temp";
+const char* TOPIC_UMBRAL_HUM = "ic/umbral/hum";
 
 PubSubClient client(espClient);
 long lastMsg = 0;
@@ -65,6 +73,37 @@ MrY=
 -----END CERTIFICATE-----
 )EOF";
 
+// --- NUEVA FUNCIÓN: PARSING DE MENSAJES (ALTO, BAJO) ---
+void parseThresholds(String payload, volatile float &high_ref, volatile float &low_ref, const char* label) {
+    int commaIndex = payload.indexOf(',');
+    
+    if (commaIndex > 0) {
+        String highString = payload.substring(0, commaIndex);
+        String lowString = payload.substring(commaIndex + 1);
+        
+        float new_high = highString.toFloat();
+        float new_low = lowString.toFloat();
+        
+        // Validación básica
+        if (new_high > new_low) { // Eliminamos <= 100.0 ya que la humedad puede ser 100%
+            high_ref = new_high;
+            low_ref = new_low;
+            Serial.print("Umbrales ");
+            Serial.print(label);
+            Serial.print(" actualizados: ALTO=");
+            Serial.print(high_ref);
+            Serial.print(", BAJO=");
+            Serial.println(low_ref);
+        } else {
+            Serial.print("ERROR: Valores de umbral inválidos (Alto <= Bajo) para ");
+            Serial.println(label);
+        }
+    } else {
+        Serial.print("ERROR: Formato de mensaje de umbral incorrecto (Falta coma) para ");
+        Serial.println(label);
+    }
+}
+
 void setup() {
   Serial.begin(115200);
   setup_wifi();
@@ -79,12 +118,16 @@ void setup() {
   pinMode(LED_VERDE, OUTPUT);
   pinMode(LED_ALERTA_ROJA_TEMP, OUTPUT);
   pinMode(LED_ALERTA_AZUL_TEMP, OUTPUT);
+  pinMode(LED_ALERTA_ROJA_HUM, OUTPUT);
+  pinMode(LED_ALERTA_AZUL_HUM, OUTPUT);
   
   // Estado inicial leds
   digitalWrite(LED_ROJO, HIGH);// Rojo encendido por default (indicando no conectado)
   digitalWrite(LED_VERDE, LOW);// Verde apagado
   digitalWrite(LED_ALERTA_AZUL_TEMP, LOW);
   digitalWrite(LED_ALERTA_ROJA_TEMP, LOW);
+  digitalWrite(LED_ALERTA_AZUL_HUM, LOW);
+  digitalWrite(LED_ALERTA_ROJA_HUM, LOW);
 }
 
 void setup_wifi(){
@@ -117,6 +160,19 @@ void callback(char* topic, byte* message, unsigned int length){
     messageTemp += (char)message[i];
    }
   Serial.println();
+
+  // ------------------------------------------
+  // LÓGICA DE ACTUALIZACIÓN DE UMBRALES
+  // ------------------------------------------
+  
+  // Si el tópico es de Temperatura
+  if (strcmp(topic, TOPIC_UMBRAL_TEMP) == 0) {
+      parseThresholds(messageTemp, UMBRAL_ALTO, UMBRAL_BAJO, "TEMP");
+  }
+  // Si el tópico es de Humedad
+  else if (strcmp(topic, TOPIC_UMBRAL_HUM) == 0) {
+      parseThresholds(messageTemp, UMBRAL_ALTO_HUM, UMBRAL_BAJO_HUM, "HUM");
+  }
 }
 
 // realiza la reconexiòn en caso de fallo
@@ -130,10 +186,9 @@ void reconnect (){
       // Cambiar LEDs
       digitalWrite(LED_ROJO, LOW);  
       digitalWrite(LED_VERDE, HIGH);  
-      
-      //client.subscribe ("pci/sensor/temp");
-      //client.subscribe("pci/value1/dig");
-      //client.subscribe("pci/value1/analog");
+      //sub a topicos
+      client.subscribe(TOPIC_UMBRAL_TEMP);
+      client.subscribe(TOPIC_UMBRAL_HUM);
       } else {
         Serial.print ("fallo, rc=");
         Serial.print (client.state());
@@ -170,7 +225,7 @@ void loop() {
     }
 
      // ------------------------------------------
-    // LÓGICA DE CONTROL DE LEDS DE ALERTA (NUEVO)
+    // LÓGICA DE CONTROL DE LEDS DE ALERTA TEMPERATURA
     // ------------------------------------------
       if (Temperatura >= UMBRAL_ALTO) {
           // Alerta ROJA (Temperatura Alta)
@@ -186,6 +241,25 @@ void loop() {
           // Rango normal: ambos apagados
           digitalWrite(LED_ALERTA_ROJA_TEMP, LOW);
           digitalWrite(LED_ALERTA_AZUL_TEMP, LOW);
+      }
+
+       // ------------------------------------------
+    // 2. LÓGICA DE CONTROL DE LEDS DE HUMEDAD
+    // ------------------------------------------
+      if (Humedad >= UMBRAL_ALTO_HUM) {
+          // Alerta ROJA (Humedad Alta)
+          digitalWrite(LED_ALERTA_ROJA_HUM, HIGH);
+          digitalWrite(LED_ALERTA_AZUL_HUM, LOW);
+          Serial.println(">>> ALERTA ROJA: HUMEDAD ALTA");
+      } else if (Humedad <= UMBRAL_BAJO_HUM) {
+          // Alerta AZUL (Humedad Baja)
+          digitalWrite(LED_ALERTA_ROJA_HUM, LOW);
+          digitalWrite(LED_ALERTA_AZUL_HUM, HIGH);
+          Serial.println(">>> ALERTA AZUL: HUMEDAD BAJA");
+      } else {
+          // Rango normal: ambos apagados
+          digitalWrite(LED_ALERTA_ROJA_HUM, LOW);
+          digitalWrite(LED_ALERTA_AZUL_HUM, LOW);
       }
 
       // Mostrar en el monitor serial
