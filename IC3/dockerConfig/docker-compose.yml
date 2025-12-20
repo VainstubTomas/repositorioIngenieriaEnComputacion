@@ -11,5 +11,30 @@ services:
       - 1883:1883
       - 8883:8883 
       - 18083:18083
+    volumes:
+      - emqx_data:/opt/emqx/data
+  
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_data:/data/db
+
+  simulador_esp:
+    image: python:3.12-slim
+    container_name: esp32_mock
+    depends_on:
+      - emqx
+    volumes:
+      - ./simulador_esp32.py:/app/simulador_esp32.py
+    working_dir: /app
+    command: sh -c "pip install paho-mqtt && python simulador_esp32.py"
+
+volumes:
+  mongo_data:
+  emqx_data:
 
 
