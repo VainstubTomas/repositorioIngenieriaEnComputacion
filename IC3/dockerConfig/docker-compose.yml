@@ -1,0 +1,15 @@
+#container execution with: docker-compose up
+
+version: "3"
+services: 
+
+  emqx:
+    container_name: emqx
+    image: emqx/emqx:6.0.1
+    restart: always
+    ports: 
+      - 1883:1883
+      - 8883:8883 
+      - 18083:18083
+
+

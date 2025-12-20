@@ -4,7 +4,7 @@
 #include <DHT.h>
 #include <WiFiClientSecure.h>
 
-WiFiClientSecure espClient;
+WiFiClient espClient;
 
 // def y config DHT11
 #define DHTPIN 23
@@ -43,9 +43,10 @@ const char* password = "55500722";
 
 // config mqtt
 // dir mqtt broker ip adreess
-const char* mqtt_server = "j72b9212.ala.us-east-1.emqxsl.com";
+const char* mqtt_server = "192.168.0.104";
+const int mqtt_port = 1883;
 const char* mqtt_user = "user";        // Tu Username
-const char* mqtt_password = "FinalPCI123"; // Tu Password
+const char* mqtt_password = "user"; // Tu Password
 
 // certificado broker
 const char* EMQX_CA_CERT = R"EOF(
@@ -107,8 +108,8 @@ void parseThresholds(String payload, volatile float &high_ref, volatile float &l
 void setup() {
   Serial.begin(115200);
   setup_wifi();
-  espClient.setCACert(EMQX_CA_CERT);
-  client.setServer(mqtt_server, 8883);
+  //espClient.setCACert(EMQX_CA_CERT);
+  client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   //dht11
   dht.begin();

@@ -9,8 +9,10 @@ import time
 from configBD.mongo_manager import save_data 
 
 # --- Broker Configuration (CLOUD) ---
-BROKER = "j72b9212.ala.us-east-1.emqxsl.com" # Cloud broker URL
-PORT = 8883 # Secure port (SSL/TLS)
+# BROKER = "j72b9212.ala.us-east-1.emqxsl.com"
+# PORT = 1883
+BROKER = "localhost"
+PORT = 1883
 
 # TOPICOS DE DATOS (LECTURA DESDE ESP32)
 TOPICS = [("ic/sensor/temp", 0), ("ic/sensor/humedad", 0)] 
@@ -20,8 +22,8 @@ TOPIC_UMBRAL_HUM = "ic/umbral/hum"
 
 
 USERNAME = "user"
-PASSWORD = "FinalPCI123"
-CA_CERT_PATH = "emqxsl-ca.crt" # Name of the certificate file in the same folder
+PASSWORD = "user"
+# CA_CERT_PATH = "emqxsl-ca.crt"
 
 # --- ALERT CONFIGURATION (VARIABLES GLOBALES MODIFICABLES) ---
 HIGH_TEMP_THRESHOLD = 30.0 # Upper temperature limit (Red Alert)
@@ -48,9 +50,9 @@ threshold_inputs = {} # Contiene los QLineEdit
 
 
 # Callback when connected
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, reason_code, properties=None):
     global last_db_save_time
-    if rc == 0:
+    if reason_code == 0:
         print("Conectado exitosamente al broker MQTT en la nube.")
         for t in TOPICS:
             client.subscribe(t)
@@ -60,8 +62,8 @@ def on_connect(client, userdata, flags, rc):
         update_thresholds(initial_sync=True) 
         last_db_save_time = time.time() 
     else:
-        print(f"Error de conexión. Código: {rc}")
-        if rc == 5:
+        print(f"Error de conexión. Código: {reason_code}")
+        if reason_code == 5:
             print("Error: Autenticación fallida (Username/Password incorrectos).")
 
 # Callback when a message arrives
@@ -138,15 +140,16 @@ def update_thresholds(initial_sync=False):
 
 
 # Create MQTT client
-client = mqtt.Client()
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.username_pw_set(USERNAME, PASSWORD)
 
 # TLS/SSL Security Configuration
-try:
-    client.tls_set(ca_certs=CA_CERT_PATH)
-    client.username_pw_set(USERNAME, PASSWORD)
-except FileNotFoundError:
-    print(f"ERROR: No se encontró el archivo de certificado CA en la ruta: {CA_CERT_PATH}")
-    sys.exit()
+# try:
+#     client.tls_set(ca_certs=CA_CERT_PATH)
+#     client.username_pw_set(USERNAME, PASSWORD)
+# except FileNotFoundError:
+#     print(f"ERROR: No se encontró el archivo de certificado CA en la ruta: {CA_CERT_PATH}")
+#     sys.exit()
 
 client.on_connect = on_connect
 client.on_message = on_message
