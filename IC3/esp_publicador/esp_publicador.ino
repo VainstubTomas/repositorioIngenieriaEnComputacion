@@ -4,7 +4,9 @@
 #include <DHT.h>
 #include <WiFiClientSecure.h>
 
-WiFiClient espClient;
+WiFiClientSecure espClient;
+
+PubSubClient client(espClient);
 
 // def y config DHT11
 #define DHTPIN 23
@@ -26,10 +28,9 @@ volatile float UMBRAL_ALTO_HUM = 90.0;
 volatile float UMBRAL_BAJO_HUM = 30.0;
 
 // TOPICOS DE COMANDO (Debe coincidir con Python)
-const char* TOPIC_UMBRAL_TEMP = "ic/umbral/temp";
-const char* TOPIC_UMBRAL_HUM = "ic/umbral/hum";
+const char* TOPIC_UMBRAL_TEMP = "unraf/48E729B45E88/cmd/set_umbral_temp";
+const char* TOPIC_UMBRAL_HUM = "unraf/48E729B45E88/cmd/set_umbral_hum";
 
-PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
@@ -43,8 +44,9 @@ const char* password = "55500722";
 
 // config mqtt
 // dir mqtt broker ip adreess
-const char* mqtt_server = "192.168.0.104";
-const int mqtt_port = 1883;
+//const char* mqtt_server = "192.168.0.104";
+const char* mqtt_server = "j72b9212.ala.us-east-1.emqxsl.com";
+//const int mqtt_port = 1883;
 const char* mqtt_user = "user";        // Tu Username
 const char* mqtt_password = "user"; // Tu Password
 
@@ -108,8 +110,9 @@ void parseThresholds(String payload, volatile float &high_ref, volatile float &l
 void setup() {
   Serial.begin(115200);
   setup_wifi();
-  //espClient.setCACert(EMQX_CA_CERT);
-  client.setServer(mqtt_server, mqtt_port);
+  
+  client.setServer(mqtt_server, 8883);
+  espClient.setCACert(EMQX_CA_CERT);
   client.setCallback(callback);
   //dht11
   dht.begin();
@@ -273,11 +276,11 @@ void loop() {
     //publicamos temperatura
     char tempString[8];
     dtostrf(Temperatura, 1, 2, tempString);
-    client.publish("ic/sensor/temp", tempString);
+    client.publish("unraf/48E729B45E88/temp", tempString);
     
     //Publicar humedad
     char humString[8];
     dtostrf(Humedad, 1, 2, humString);
-    client.publish("ic/sensor/humedad", humString);
+    client.publish("unraf/48E729B45E88/hum", humString);
   }
 }

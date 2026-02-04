@@ -4,8 +4,9 @@ from pymongo.errors import ConnectionFailure, OperationFailure
 
 # --- CONFIGURACIÓN DE MONGODB ---
 # user:user es el usuario:contraseña
-# MONGO_URI = "mongodb+srv://user:user@valoressensados.yuszhtm.mongodb.net/sensados_ic_3?appName=ValoresSensados"
-MONGO_URI = "mongodb://localhost:27017/"
+MONGO_URI = "mongodb+srv://user:user@valoressensados.yuszhtm.mongodb.net/sensados_ic_3?appName=ValoresSensados"
+#DESCOMENTAR PARA USAR DOCKER
+#MONGO_URI = "mongodb://localhost:27017/"
 DATABASE_NAME = "sensados_ic_3"
 COLLECTION_NAME = "sensor_data"
 

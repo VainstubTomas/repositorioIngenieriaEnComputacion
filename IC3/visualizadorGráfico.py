@@ -5,25 +5,29 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets, QtCore 
 import sys 
 import time 
+import os
 # Asegúrate de que esta línea de importación sea correcta para tu estructura de carpetas
 from configBD.mongo_manager import save_data 
 
 # --- Broker Configuration (CLOUD) ---
-# BROKER = "j72b9212.ala.us-east-1.emqxsl.com"
+BROKER = "j72b9212.ala.us-east-1.emqxsl.com"
+PORT = 8883
+#DESCOMENTAR PARA USAR DOCKER
+# BROKER = "localhost"
 # PORT = 1883
-BROKER = "localhost"
-PORT = 1883
 
 # TOPICOS DE DATOS (LECTURA DESDE ESP32)
-TOPICS = [("ic/sensor/temp", 0), ("ic/sensor/humedad", 0)] 
+TOPICS = [("unraf/48E729B45E88/temp", 0), ("unraf/48E729B45E88/hum", 0)] 
 # TOPICOS DE COMANDO (ESCRITURA HACIA ESP32)
-TOPIC_UMBRAL_TEMP = "ic/umbral/temp"
-TOPIC_UMBRAL_HUM = "ic/umbral/hum"
+TOPIC_UMBRAL_TEMP = "unraf/48E729B45E88/cmd/set_umbral_temp"
+TOPIC_UMBRAL_HUM = "unraf/48E729B45E88/cmd/set_umbral_hum"
 
 
 USERNAME = "user"
 PASSWORD = "user"
-# CA_CERT_PATH = "emqxsl-ca.crt"
+#COMENTAR
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CA_CERT_PATH = os.path.join(SCRIPT_DIR, "emqxsl-ca.crt")
 
 # --- ALERT CONFIGURATION (VARIABLES GLOBALES MODIFICABLES) ---
 HIGH_TEMP_THRESHOLD = 30.0 # Upper temperature limit (Red Alert)
@@ -73,9 +77,9 @@ def on_message(client, userdata, msg):
         valor = float(msg.payload.decode())
         
         # Temporarily store the value in the last received variable
-        if msg.topic == "ic/sensor/temp":
+        if msg.topic == "unraf/48E729B45E88/temp":
             last_temp = valor
-        elif msg.topic == "ic/sensor/humedad":
+        elif msg.topic == "unraf/48E729B45E88/hum":
             last_hum = valor
             
         # Synchronization Logic: Only add to the buffer if we have both data points
@@ -143,13 +147,13 @@ def update_thresholds(initial_sync=False):
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.username_pw_set(USERNAME, PASSWORD)
 
-# TLS/SSL Security Configuration
-# try:
-#     client.tls_set(ca_certs=CA_CERT_PATH)
-#     client.username_pw_set(USERNAME, PASSWORD)
-# except FileNotFoundError:
-#     print(f"ERROR: No se encontró el archivo de certificado CA en la ruta: {CA_CERT_PATH}")
-#     sys.exit()
+#TLS/SSL Security Configuration
+try:
+    client.tls_set(ca_certs=CA_CERT_PATH)
+    client.username_pw_set(USERNAME, PASSWORD)
+except FileNotFoundError:
+    print(f"ERROR: No se encontró el archivo de certificado CA en la ruta: {CA_CERT_PATH}")
+    sys.exit()
 
 client.on_connect = on_connect
 client.on_message = on_message
