@@ -10,11 +10,11 @@ import os
 from configBD.mongo_manager import save_data 
 
 # --- Broker Configuration (CLOUD) ---
-BROKER = "j72b9212.ala.us-east-1.emqxsl.com"
-PORT = 8883
-#DESCOMENTAR PARA USAR DOCKER
-# BROKER = "localhost"
-# PORT = 1883
+# BROKER = "j72b9212.ala.us-east-1.emqxsl.com"
+# PORT = 8883
+#USO DOCKER
+BROKER = "localhost"
+PORT = 1883
 
 # TOPICOS DE DATOS (LECTURA DESDE ESP32)
 TOPICS = [("unraf/48E729B45E88/temp", 0), ("unraf/48E729B45E88/hum", 0)] 
@@ -25,9 +25,10 @@ TOPIC_UMBRAL_HUM = "unraf/48E729B45E88/cmd/set_umbral_hum"
 
 USERNAME = "user"
 PASSWORD = "user"
+
 #COMENTAR
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-CA_CERT_PATH = os.path.join(SCRIPT_DIR, "emqxsl-ca.crt")
+# SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# CA_CERT_PATH = os.path.join(SCRIPT_DIR, "emqxsl-ca.crt")
 
 # --- ALERT CONFIGURATION (VARIABLES GLOBALES MODIFICABLES) ---
 HIGH_TEMP_THRESHOLD = 30.0 # Upper temperature limit (Red Alert)
@@ -147,13 +148,14 @@ def update_thresholds(initial_sync=False):
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.username_pw_set(USERNAME, PASSWORD)
 
+#COMENTAR
 #TLS/SSL Security Configuration
-try:
-    client.tls_set(ca_certs=CA_CERT_PATH)
-    client.username_pw_set(USERNAME, PASSWORD)
-except FileNotFoundError:
-    print(f"ERROR: No se encontró el archivo de certificado CA en la ruta: {CA_CERT_PATH}")
-    sys.exit()
+# try:
+#     client.tls_set(ca_certs=CA_CERT_PATH)
+#     client.username_pw_set(USERNAME, PASSWORD)
+# except FileNotFoundError:
+#     print(f"ERROR: No se encontró el archivo de certificado CA en la ruta: {CA_CERT_PATH}")
+#     sys.exit()
 
 client.on_connect = on_connect
 client.on_message = on_message

@@ -28,8 +28,8 @@ try:
         temp = round(random.uniform(20.0, 30.0), 2)
         hum = round(random.uniform(40.0, 70.0), 2)
         
-        client.publish("ic/sensor/temp", str(temp))
-        client.publish("ic/sensor/humedad", str(hum))
+        client.publish("unraf/48E729B45E88/temp", str(temp))
+        client.publish("unraf/48E729B45E88/hum", str(hum))
         
         print(f"Publicando -> Temp: {temp}, Hum: {hum}")
         time.sleep(2)
